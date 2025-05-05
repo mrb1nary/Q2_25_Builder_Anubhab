@@ -18,7 +18,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = initializer,
-        seeds = [b"lp", config.key.as_ref()],
+        seeds = [b"lp", config.key().as_ref()],
         bump,
         mint::decimals = 6,
         mint::authority = config,
