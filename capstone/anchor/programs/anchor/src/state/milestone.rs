@@ -12,10 +12,10 @@ pub struct Milestone {
     pub evidence_hash: String,    // Researcher's evidence
     
     // Validation
-    pub validation_votes: u32,    // Successful votes (rename from yes_votes)
+    pub validation_votes: u32,    // Successful votes 
     pub total_validators: u32,
     pub funds_released: bool,
-    pub deadline: i64,           
+    pub deadline: i64,           //Considered as 14 day default throughtout the program
     
     // State
     pub status: MilestoneStatus,

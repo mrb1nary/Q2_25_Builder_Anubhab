@@ -7,5 +7,5 @@ pub use milestone::*;
 pub mod contributor;
 pub use contributor::*;
 
-pub mod escrow;
-pub use escrow::*;
+pub mod vote;
+pub use vote::*;
