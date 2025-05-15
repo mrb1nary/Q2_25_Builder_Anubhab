@@ -45,7 +45,7 @@ describe("apply_penalty", () => {
     await provider.connection.confirmTransaction(
       await provider.connection.requestAirdrop(
         authority.publicKey,
-        2 * anchor.web3.LAMPORTS_PER_SOL
+        1 * anchor.web3.LAMPORTS_PER_SOL
       )
     );
 
@@ -170,8 +170,8 @@ describe("apply_penalty", () => {
       const milestone = await program.account.milestone.fetch(milestonePda);
       console.log("Current milestone status:", milestone.status);
 
-      // Use a test-only instruction to set the milestone status to Failed
-      // You need to add this instruction to your program for testing
+      // Using a test-only instruction to set the milestone status to Failed
+      // We need to add this instruction to your program for testing
       await program.methods
         .testSetMilestoneStatus({ failed: {} })
         .accounts({
@@ -194,7 +194,7 @@ describe("apply_penalty", () => {
     } catch (err) {
       console.log("Failed to set milestone status:", err);
       console.log(
-        "You need to add a test-only instruction to set milestone status."
+        "We need to add a test-only instruction to set milestone status."
       );
       console.log(
         "Test will likely fail unless the milestone is already in Failed state."

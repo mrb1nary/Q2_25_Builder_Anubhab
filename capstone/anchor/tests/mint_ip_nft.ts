@@ -19,6 +19,9 @@ describe("mint_ip_nft", () => {
     "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
   );
 
+  // const tokenMetadataProgram = new anchor.web3.PublicKey(
+  //   "META2Z6dddTVgdq8Uz7cVjTGVmFY8C5i48H5GQ2GRv3" // ✅ v1.1.7+
+  // );
   const uniqueId = Math.random().toString(36).substring(2, 8);
   const nftName = `Test NFT ${uniqueId}`;
   const nftSymbol = "TNFT";
@@ -41,12 +44,12 @@ describe("mint_ip_nft", () => {
     console.log(`RPC endpoint: ${provider.connection.rpcEndpoint}`);
 
     // Request airdrop and wait for balance confirmation
-    const airdropSig = await provider.connection.requestAirdrop(
-      payer.publicKey,
-      1 * anchor.web3.LAMPORTS_PER_SOL
-    );
-    await provider.connection.confirmTransaction(airdropSig, "confirmed");
-    await waitForBalance(payer.publicKey, 1 * anchor.web3.LAMPORTS_PER_SOL);
+    // const airdropSig = await provider.connection.requestAirdrop(
+    //   payer.publicKey,
+    //   1 * anchor.web3.LAMPORTS_PER_SOL
+    // );
+    // await provider.connection.confirmTransaction(airdropSig, "confirmed");
+    // await waitForBalance(payer.publicKey, 1 * anchor.web3.LAMPORTS_PER_SOL);
 
     mintKeypair = anchor.web3.Keypair.generate();
 

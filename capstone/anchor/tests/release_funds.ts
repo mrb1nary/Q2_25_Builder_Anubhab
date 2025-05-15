@@ -27,24 +27,25 @@ describe("release_funds", () => {
   let researcherTokenAccount: anchor.web3.PublicKey;
   let escrowPda: anchor.web3.PublicKey;
 
-  // Generate a unique title for this test run
   const uniqueId = Math.random().toString(36).substring(2, 8);
   const title = `Test_${uniqueId}`;
   const abstract = "Test Abstract";
   const ipfsHash = "QmTestHash";
-  const amountAsked = new anchor.BN(1000000000); // 1 token with 9 decimals
+  const amountAsked = new anchor.BN(1000000000);
   const totalMilestones = 3;
-  const securityDeposit = new anchor.BN(100000000); // 0.1 token
+  const securityDeposit = new anchor.BN(100000000);
   const milestoneNumber = 1;
   const evidenceHash = "QmTestEvidenceHash";
 
   before(async () => {
-    // Fund validator wallet
-    const airdropSig = await provider.connection.requestAirdrop(
-      validator.publicKey,
-      2 * anchor.web3.LAMPORTS_PER_SOL
+    // Airdrop SOL to validator
+    await provider.connection.confirmTransaction(
+      await provider.connection.requestAirdrop(
+        validator.publicKey,
+        1 * anchor.web3.LAMPORTS_PER_SOL
+      ),
+      "confirmed"
     );
-    await provider.connection.confirmTransaction(airdropSig);
 
     // Create mint
     mint = await createMint(
@@ -61,7 +62,6 @@ describe("release_funds", () => {
       researcher.publicKey
     );
 
-    // Create ATA for researcher
     try {
       const tx = new anchor.web3.Transaction().add(
         createAssociatedTokenAccountInstruction(
@@ -86,10 +86,9 @@ describe("release_funds", () => {
       mint,
       researcherTokenAccount,
       researcher.publicKey,
-      2000000000 // 2 tokens (for security deposit + funding)
+      2000000000
     );
 
-    // Derive proposal PDA with unique title
     [proposalPda] = anchor.web3.PublicKey.findProgramAddressSync(
       [
         Buffer.from("proposal"),
@@ -99,13 +98,11 @@ describe("release_funds", () => {
       program.programId
     );
 
-    // Derive escrow PDA
     [escrowPda] = anchor.web3.PublicKey.findProgramAddressSync(
       [Buffer.from("escrow"), proposalPda.toBuffer()],
       program.programId
     );
 
-    // Create proposal with unique title
     await program.methods
       .createProposal(
         title,
@@ -127,7 +124,6 @@ describe("release_funds", () => {
       })
       .rpc();
 
-    // Fund the proposal (as researcher for simplicity)
     await program.methods
       .fundProposal(amountAsked)
       .accounts({
@@ -150,7 +146,6 @@ describe("release_funds", () => {
       })
       .rpc();
 
-    // Derive milestone PDA
     [milestonePda] = anchor.web3.PublicKey.findProgramAddressSync(
       [
         Buffer.from("milestone"),
@@ -160,7 +155,6 @@ describe("release_funds", () => {
       program.programId
     );
 
-    // Submit milestone
     await program.methods
       .submitMilestone(milestoneNumber, evidenceHash)
       .accounts({
@@ -171,7 +165,6 @@ describe("release_funds", () => {
       })
       .rpc();
 
-    // Set milestone to Active state (if needed)
     try {
       await program.methods
         .setMilestoneActive()
@@ -186,7 +179,6 @@ describe("release_funds", () => {
       );
     }
 
-    // Derive vote PDA
     [votePda] = anchor.web3.PublicKey.findProgramAddressSync(
       [
         Buffer.from("vote"),
@@ -196,8 +188,6 @@ describe("release_funds", () => {
       program.programId
     );
 
-    // Validate milestone with approval
-    // We need to validate the milestone before we can release funds
     await program.methods
       .validateMilestone(true)
       .accounts({
@@ -210,7 +200,6 @@ describe("release_funds", () => {
       .signers([validator])
       .rpc();
 
-    // Create additional validators and have them approve to reach threshold
     const validator2 = anchor.web3.Keypair.generate();
     await provider.connection.confirmTransaction(
       await provider.connection.requestAirdrop(
@@ -242,20 +231,17 @@ describe("release_funds", () => {
   });
 
   it("Successfully releases funds for a validated milestone", async () => {
-    // Verify milestone is validated before proceeding
     const milestoneBefore = await program.account.milestone.fetch(milestonePda);
     if (!milestoneBefore.status.validated) {
       console.log("Milestone not validated, skipping test");
       return;
     }
 
-    // Skip test if funds are already released
     if (milestoneBefore.fundsReleased) {
       console.log("Funds already released, skipping test");
       return;
     }
 
-    // Get token balances before
     const escrowBalanceBefore = (
       await getAccount(provider.connection, escrowPda)
     ).amount;
@@ -263,10 +249,8 @@ describe("release_funds", () => {
       await getAccount(provider.connection, researcherTokenAccount)
     ).amount;
 
-    // Calculate expected payment
     const expectedPayment = amountAsked.div(new anchor.BN(totalMilestones));
 
-    // Release funds
     await program.methods
       .releaseFunds()
       .accounts({
@@ -280,7 +264,6 @@ describe("release_funds", () => {
       })
       .rpc();
 
-    // Fetch accounts after release
     const milestoneAfter = await program.account.milestone.fetch(milestonePda);
     const proposalAfter = await program.account.proposal.fetch(proposalPda);
     const escrowBalanceAfter = (
@@ -290,10 +273,7 @@ describe("release_funds", () => {
       await getAccount(provider.connection, researcherTokenAccount)
     ).amount;
 
-    // Assert milestone updated
     assert.equal(milestoneAfter.fundsReleased, true);
-
-    // Assert token balances changed correctly
     assert.equal(
       escrowBalanceAfter.toString(),
       (
@@ -309,7 +289,6 @@ describe("release_funds", () => {
       ).toString()
     );
 
-    // Check if proposal was marked completed (if this was the last milestone)
     if (proposalAfter.currentMilestone === proposalAfter.totalMilestones) {
       assert.deepEqual(proposalAfter.status, { completed: {} });
     }
@@ -337,7 +316,6 @@ describe("release_funds", () => {
   });
 
   it("Fails if milestone is not validated", async () => {
-    // Create a new milestone that's not validated
     const newMilestoneNumber = 2;
     const [newMilestonePda] = anchor.web3.PublicKey.findProgramAddressSync(
       [
@@ -348,7 +326,6 @@ describe("release_funds", () => {
       program.programId
     );
 
-    // Submit the milestone
     await program.methods
       .submitMilestone(newMilestoneNumber, "QmNewEvidence")
       .accounts({
